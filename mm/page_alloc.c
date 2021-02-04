@@ -128,6 +128,9 @@ nodemask_t node_states[NR_NODE_STATES] __read_mostly = {
 };
 EXPORT_SYMBOL(node_states);
 
+int (*free_pvtpool_page) (struct page *page) = NULL;
+EXPORT_SYMBOL(free_pvtpool_page);
+
 atomic_long_t _totalram_pages __read_mostly;
 EXPORT_SYMBOL(_totalram_pages);
 unsigned long totalreserve_pages __read_mostly;
@@ -3018,6 +3021,16 @@ void mark_free_pages(struct zone *zone)
 static bool free_unref_page_prepare(struct page *page, unsigned long pfn)
 {
 	int migratetype;
+
+	/* If this page belong to a private gen_pool buffer, and a
+	 * handling function is defined, then call the handler first
+	 * before releasing page to PCP */
+	if (free_pvtpool_page) {
+		/* This function returns 0 if the page was correctly
+		 * free'd in a private page pool */
+		if (!free_pvtpool_page(page))
+			return false;
+	}
 
 	if (!free_pcp_prepare(page))
 		return false;

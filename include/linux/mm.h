@@ -754,6 +754,8 @@ void put_pages_list(struct list_head *pages);
 
 void split_page(struct page *page, unsigned int order);
 
+extern int (*free_pvtpool_page) (struct page *page);
+
 /*
  * Compound pages have a destructor function.  Provide a
  * prototype for that function and accessor functions.
