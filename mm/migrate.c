@@ -1485,6 +1485,115 @@ out:
 	return rc;
 }
 
+static int do_move_pages_to_custom_pool(struct mm_struct *mm,
+					struct list_head *pagelist,
+					new_page_t get_new_page,
+					unsigned long private)
+{
+	int err;
+
+	if (list_empty(pagelist))
+		return 0;
+
+	pr_info("MIGR: Migration started!\n");
+
+	err = migrate_pages(pagelist, get_new_page, NULL, private,
+			MIGRATE_SYNC, MR_NUMA_MISPLACED);
+
+	pr_info("MIGR: Migration completed (%d)!\n", err);
+
+	if (err)
+		putback_movable_pages(pagelist);
+
+	return err;
+}
+
+static int add_page_pvtpool_migration(struct mm_struct *mm, unsigned long addr,
+				      struct list_head *pagelist, bool migrate_all)
+{
+	struct vm_area_struct *vma;
+	struct page *page;
+	unsigned int follflags;
+	int err;
+
+	down_read(&mm->mmap_sem);
+	err = -EFAULT;
+	vma = find_vma(mm, addr);
+	if (!vma || addr < vma->vm_start)
+		goto out;
+
+	/* FOLL_DUMP to ignore special (like zero) pages */
+	follflags = FOLL_GET | FOLL_DUMP;
+	page = follow_page(vma, addr, follflags);
+
+	err = PTR_ERR(page);
+	if (IS_ERR(page))
+		goto out;
+
+	err = -ENOENT;
+	if (!page)
+		goto out;
+
+	if (PageHuge(page)) {
+		if (PageHead(page)) {
+			isolate_huge_page(page, pagelist);
+			err = 0;
+		}
+	} else {
+		struct page *head;
+
+		head = compound_head(page);
+		err = isolate_lru_page(head);
+		if (err)
+			goto out_putpage;
+
+		err = 0;
+		list_add_tail(&head->lru, pagelist);
+		mod_node_page_state(page_pgdat(head),
+			NR_ISOLATED_ANON + page_is_file_cache(head),
+			hpage_nr_pages(head));
+	}
+out_putpage:
+	/*
+	 * Either remove the duplicate refcount from
+	 * isolate_lru_page() or drop the page ref if it was
+	 * not isolated.
+	 */
+	put_page(page);
+out:
+	up_read(&mm->mmap_sem);
+	return err;
+}
+
+
+int move_pages_to_pvtpool(struct mm_struct *mm, unsigned long nr_pages,
+			  unsigned long * vaddrs, new_page_t get_new_page,
+			  unsigned long private)
+{
+	int i, err = 0;
+	LIST_HEAD(pagelist);
+
+	migrate_prep();
+
+	for (i = 0; i < nr_pages; ++i) {
+		unsigned long addr = vaddrs[i];
+		pr_info("MIGR: Adding VA 0x%08lx\n", addr);
+		err = add_page_pvtpool_migration(mm, addr, &pagelist, 1);
+	}
+
+	if (list_empty(&pagelist))
+		return err;
+
+
+	pr_info("MIGR: Done adding VAs. Performing migration.\n");
+
+	/* Make sure we do not overwrite the existing error */
+	err = do_move_pages_to_custom_pool(mm, &pagelist, get_new_page, private);
+
+	return err;
+}
+EXPORT_SYMBOL(move_pages_to_pvtpool);
+
 #ifdef CONFIG_NUMA
 
 static int store_status(int __user *status, int start, int value, int nr)

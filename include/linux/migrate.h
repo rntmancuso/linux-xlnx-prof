@@ -61,6 +61,10 @@ static inline struct page *new_page_nodemask(struct page *page,
 
 #ifdef CONFIG_MIGRATION
 
+extern int move_pages_to_pvtpool(struct mm_struct *mm, unsigned long nr_pages,
+				 unsigned long * vaddrs, new_page_t get_new_page,
+				 unsigned long private);
+
 extern void putback_movable_pages(struct list_head *l);
 extern int migrate_page(struct address_space *mapping,
 			struct page *newpage, struct page *page,
