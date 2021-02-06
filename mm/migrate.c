@@ -1577,8 +1577,8 @@ int move_pages_to_pvtpool(struct mm_struct *mm, unsigned long nr_pages,
 
 	for (i = 0; i < nr_pages; ++i) {
 		unsigned long addr = vaddrs[i];
-		pr_info("MIGR: Adding VA 0x%08lx\n", addr);
 		err = add_page_pvtpool_migration(mm, addr, &pagelist, 1);
+		pr_info("MIGR: Adding VA 0x%08lx (res = %d)\n", addr, err);
 	}
 
 	if (list_empty(&pagelist))
