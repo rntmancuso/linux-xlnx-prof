@@ -1,0 +1,50 @@
+/*
+ * Modified memory map and reservation apertures for the
+ * definition of a Linux reservation that can be expanded
+ * to assign colored configurations randing from 1 to 16 colors
+ *
+ * This configuration is intended to be used with Jailhouse-RT.
+ * see /path/to/jailhouse/configs/arm64/zynqmp-zcu102-col16.c
+ *
+ * Renato Mancuso  <rmancuso@bu.edu>
+ *
+ */
+
+/ {
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+ 		jailhouse_mem: jailhouse_mem@87c000000 {
+ 			 no-map;
+ 		         reg = <0x8 0x7c000000 0x0 0x04000000>;
+ 		};
+
+ 		private_hi: private_hi@800000000 {
+ 		         reg = <0x8 0x00000000 0x0 0x80000000>;
+ 		};
+/*
+ 		private_hi: private_hi@80f800000 {
+ 		         reg = <0x8 0x0f800000 0x0 0x70800000>;
+ 		};
+*/
+ 		private_lo: private_lo@010000000 {
+ 		         reg = <0x0 0x10000000 0x0 0x70000000>;
+ 		};
+
+	};
+
+	amba {
+                serial@ff010000 {
+                        status = "disabled";
+                };
+        };
+
+        aliases {
+                /delete-property/ serial1;
+        };
+};
+
+/delete-node/ &uart1;
