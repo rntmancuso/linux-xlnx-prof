@@ -128,6 +128,9 @@ nodemask_t node_states[NR_NODE_STATES] __read_mostly = {
 };
 EXPORT_SYMBOL(node_states);
 
+struct page * (*alloc_pvtpool_page) (struct page *page, unsigned long) = NULL;
+EXPORT_SYMBOL(alloc_pvtpool_page);
+
 int (*free_pvtpool_page) (struct page *page) = NULL;
 EXPORT_SYMBOL(free_pvtpool_page);
 
