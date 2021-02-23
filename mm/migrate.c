@@ -1495,12 +1495,8 @@ static int do_move_pages_to_custom_pool(struct mm_struct *mm,
 	if (list_empty(pagelist))
 		return 0;
 
-	pr_info("MIGR: Migration started!\n");
-
 	err = migrate_pages(pagelist, get_new_page, NULL, private,
 			MIGRATE_SYNC, MR_NUMA_MISPLACED);
-
-	pr_info("MIGR: Migration completed (%d)!\n", err);
 
 	if (err)
 		putback_movable_pages(pagelist);
@@ -1578,14 +1574,10 @@ int move_pages_to_pvtpool(struct mm_struct *mm, unsigned long nr_pages,
 	for (i = 0; i < nr_pages; ++i) {
 		unsigned long addr = vaddrs[i];
 		err = add_page_pvtpool_migration(mm, addr, &pagelist, 1);
-		pr_info("MIGR: Adding VA 0x%08lx (res = %d)\n", addr, err);
 	}
 
 	if (list_empty(&pagelist))
 		return err;
-
-
-	pr_info("MIGR: Done adding VAs. Performing migration.\n");
 
 	/* Make sure we do not overwrite the existing error */
 	err = do_move_pages_to_custom_pool(mm, &pagelist, get_new_page, private);
