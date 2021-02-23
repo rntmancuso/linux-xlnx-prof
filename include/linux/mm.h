@@ -303,6 +303,9 @@ extern unsigned int kobjsize(const void *objp);
 #define VM_HIGH_ARCH_2	BIT(VM_HIGH_ARCH_BIT_2)
 #define VM_HIGH_ARCH_3	BIT(VM_HIGH_ARCH_BIT_3)
 #define VM_HIGH_ARCH_4	BIT(VM_HIGH_ARCH_BIT_4)
+#else
+#define VM_ALLOC_PVT_BIT        32
+#define VM_ALLOC_PVT    BIT(VM_ALLOC_PVT_BIT)
 #endif /* CONFIG_ARCH_USES_HIGH_VMA_FLAGS */
 
 #ifdef CONFIG_ARCH_HAS_PKEYS
@@ -754,7 +757,15 @@ void put_pages_list(struct list_head *pages);
 
 void split_page(struct page *page, unsigned int order);
 
+#define PVTPOOL_ALLOC_ALWAYS      0
+#define PVTPOOL_ALLOC_NOREPLACE   1
+#define IS_PVTPOOL_PARAMS         2
+struct pvtpool_params {
+	struct vm_area_struct * vma;
+	unsigned long vaddr;
+};
 extern int (*free_pvtpool_page) (struct page *page);
+extern struct page * (*alloc_pvtpool_page) (struct page *page, unsigned long);
 
 /*
  * Compound pages have a destructor function.  Provide a
