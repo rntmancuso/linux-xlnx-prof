@@ -1,0 +1,33 @@
+/*
+ * Modified memory map and reservation apertures for the
+ * definition of shared and private cache partitions.
+ *
+ * This configuration is intended to be used with Jailhouse-RT.
+ * see /path/to/jailhouse/configs/arm64/zynqmp-zcu102-root-pvtsh.c
+ *
+ * Renato Mancuso  <rmancuso@bu.edu>
+ *
+ */
+
+/ {
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		jailhouse_mem: jailhouse_mem@87d000000 {
+			 no-map;
+		         reg = <0x8 0x7d000000 0x0 0x03000000>;
+		};
+
+		private_hi: privatehi@800000000 {
+		         reg = <0x8 0x00000000 0x0 0x7d000000>;
+		};
+
+		private_lo: privatelo@60000000 {
+		         reg = <0x0 0x60000000 0x0 0x20000000>;
+		};
+
+	};
+};
