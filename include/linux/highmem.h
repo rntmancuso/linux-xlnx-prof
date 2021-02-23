@@ -183,8 +183,19 @@ __alloc_zeroed_user_highpage(gfp_t movableflags,
 			struct vm_area_struct *vma,
 			unsigned long vaddr)
 {
-	struct page *page = alloc_page_vma(GFP_HIGHUSER | movableflags,
-			vma, vaddr);
+	struct page *page = NULL;
+
+	if((vma->vm_flags & VM_ALLOC_PVT_BIT) && alloc_pvtpool_page) {
+		struct pvtpool_params params;
+		params.vma = vma;
+		params.vaddr = vaddr;
+		page = alloc_pvtpool_page((struct page *)&params,
+					  IS_PVTPOOL_PARAMS);
+	}
+
+	if (!page)
+		page = alloc_page_vma(GFP_HIGHUSER | movableflags,
+				      vma, vaddr);
 
 	if (page)
 		clear_user_highpage(page, vaddr);
