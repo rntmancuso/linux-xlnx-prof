@@ -185,7 +185,7 @@ __alloc_zeroed_user_highpage(gfp_t movableflags,
 {
 	struct page *page = NULL;
 
-	if((vma->vm_flags & VM_ALLOC_PVT_BIT) && alloc_pvtpool_page) {
+	if((vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) && alloc_pvtpool_page) {
 		struct pvtpool_params params;
 		params.vma = vma;
 		params.vaddr = vaddr;

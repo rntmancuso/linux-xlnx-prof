@@ -115,6 +115,10 @@ static inline void insert_binfmt(struct linux_binfmt *fmt)
 	__register_binfmt(fmt, 1);
 }
 
+
+//GOL
+int vma_marker(struct task_struct * task);
+//extern int test_kmod;
 extern void unregister_binfmt(struct linux_binfmt *);
 
 extern int prepare_binprm(struct linux_binprm *);

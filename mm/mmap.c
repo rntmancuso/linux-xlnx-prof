@@ -1573,7 +1573,15 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 		if (file && is_file_hugepages(file))
 			vm_flags |= VM_NORESERVE;
 	}
-
+	//Gol
+	//if (current->mm->cpu_id > 0){
+	  if (vm_flags)
+	  {
+	     printk("current->mm->cpu_id : %d\n", current->mm->cpu_id);
+	     vm_flags |= VM_ALLOC_PVT_CORE;
+	  }
+	  //	}
+	//Gol
 	addr = mmap_region(file, addr, len, vm_flags, pgoff, uf);
 	if (!IS_ERR_VALUE(addr) &&
 	    ((vm_flags & VM_LOCKED) ||

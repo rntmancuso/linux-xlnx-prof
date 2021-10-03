@@ -44,6 +44,13 @@
 #include <linux/uaccess.h>
 #include <asm/param.h>
 #include <asm/page.h>
+#include "internal.h"
+//GOL
+/* #ifndef test_kmod */
+/* int test_kmod; */
+/* EXPORT_SYMBOL(test_kmod); */
+/* #endif */
+//GOL
 
 #ifndef user_long_t
 #define user_long_t long
@@ -57,6 +64,11 @@
 #define elf_check_fdpic(ex) false
 #endif
 
+//Gol
+static int vma_marker(/*struct task_struct * task*/void);
+static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex,
+                           struct file *bprm_file);
+//Gol
 static int load_elf_binary(struct linux_binprm *bprm);
 
 #ifdef CONFIG_USELIB
@@ -88,6 +100,8 @@ static int elf_core_dump(struct coredump_params *cprm);
 #define ELF_PAGESTART(_v) ((_v) & ~(unsigned long)(ELF_MIN_ALIGN-1))
 #define ELF_PAGEOFFSET(_v) ((_v) & (ELF_MIN_ALIGN-1))
 #define ELF_PAGEALIGN(_v) (((_v) + ELF_MIN_ALIGN - 1) & ~(ELF_MIN_ALIGN - 1))
+
+
 
 static struct linux_binfmt elf_format = {
 	.module		= THIS_MODULE,
@@ -455,6 +469,102 @@ out:
 	return elf_phdata;
 }
 
+static char* load_strings(const struct elfhdr *elf_ex,
+			  struct file *elf_file, const struct elf_shdr *elf_shstr)
+{
+	char* strings = NULL;
+	int retval, err = -1;
+	loff_t pos = elf_shstr->sh_offset;
+	unsigned int size;
+	
+
+	/*
+	 * If the size of this structure has changed, then punt, since
+	 * we will be doing the wrong thing.
+	 */
+	if (elf_shstr->sh_type != SHT_STRTAB)
+		goto out;
+
+	/* Sanity check the number of program headers... */
+	/* ...and their total size. */
+	size = elf_shstr->sh_size;
+	if (size == 0 || size > 65536 || size > ELF_MIN_ALIGN)
+		goto out;
+
+	strings = kmalloc(size, GFP_KERNEL);
+	if (!strings)
+		goto out;
+
+	/* Read in the section headers */
+	retval = kernel_read(elf_file, strings, size, &pos);
+	if (retval != size) {
+		err = (retval < 0) ? retval : -EIO;
+		goto out;
+	}
+
+	/* Success! */
+	err = 0;
+out:
+	if (err) {
+		kfree(strings);
+		strings = NULL;
+	}
+	return strings;
+}
+//Gol
+/**
+ * load_elf_shdrs() - load ELF section headers
+ * @elf_ex:   ELF header of the binary whose section headers should be loaded
+ * @elf_file: the opened ELF binary file
+ *
+ * Loads ELF section  headers from the binary file elf_file, which has the ELF
+ * header pointed to by elf_ex, into a newly allocated array. The caller is
+ * responsible for freeing the allocated data. Returns an ERR_PTR upon failure.
+ */
+static struct elf_shdr *load_elf_shdrs(const struct elfhdr *elf_ex,
+				       struct file *elf_file)
+{
+	struct elf_shdr *elf_shdata = NULL;
+	int retval, err = -1;
+	loff_t pos = elf_ex->e_shoff;
+	unsigned int size;
+
+	/*
+	 * If the size of this structure has changed, then punt, since
+	 * we will be doing the wrong thing.
+	 */
+	if (elf_ex->e_shentsize != sizeof(struct elf_shdr))
+		goto out;
+
+	/* Sanity check the number of program headers... */
+	/* ...and their total size. */
+	size = sizeof(struct elf_shdr) * elf_ex->e_shnum;
+	if (size == 0 || size > 65536 || size > ELF_MIN_ALIGN)
+		goto out;
+
+	elf_shdata = kmalloc(size, GFP_KERNEL);
+	if (!elf_shdata)
+		goto out;
+
+	/* Read in the program headers */
+	retval = kernel_read(elf_file, elf_shdata, size, &pos);
+	if (retval != size) {
+		err = (retval < 0) ? retval : -EIO;
+		goto out;
+	}
+
+	/* Success! */
+	err = 0;
+out:
+	if (err) {
+		kfree(elf_shdata);
+		elf_shdata = NULL;
+	}
+	return elf_shdata;
+}
+
+//end Gol
+
 #ifndef CONFIG_ARCH_BINFMT_ELF_STATE
 
 /**
@@ -666,6 +776,89 @@ out:
 }
 
 /*
+  This function is for parsing the section header of an elf to find
+  *the extra section (profile info) and extract the cpu_id (for now)
+  */
+static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex,
+			   struct file *bprm_file){
+       
+	int i, ret, added_sec;
+	char* strings;
+	unsigned int size;
+	loff_t pos;
+	struct elf_shdr *elf_shpnt, *elf_shdata = NULL;
+	char task_name [TASK_COMM_LEN];
+	get_task_comm(task_name,task);
+	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
+		elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
+		if (!elf_shdata)
+			goto out;
+		strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
+		// check for strings later
+		elf_shpnt = elf_shdata;
+		for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
+			printk("section name is: %s\n",&strings[elf_shpnt->sh_name]);
+			if ((strcmp(&strings[elf_shpnt->sh_name],".add_elf")) == 0){
+				printk("added section is found\n");
+				size = elf_shpnt->sh_size;
+				pos = elf_shpnt->sh_offset;
+				//added_sec = kmalloc(size, GFP_KERNEL);
+				ret = kernel_read(bprm_file, &added_sec, sizeof(int), &pos);
+				if (ret != size) {
+					printk("kernel_read EROOR\n");
+					//kfree(added_sec);
+					//added_sec = NULL;
+				}
+				printk("added_sec after kernel_read:%d\n",added_sec);
+				task->mm->cpu_id = added_sec;
+			}
+
+		}
+		kfree (strings);
+		kfree (elf_shdata);
+	}
+
+	return 1;
+
+out:
+	kfree(elf_shdata);
+	elf_shdata = NULL;
+
+	return 0;
+}
+
+/*for finding desired VMAs and flag them with VM_PVT... flag
+  at the end of load_elf_binary()*/
+static int vma_marker(/*struct task_struct * task*/)
+{ 
+	struct mm_struct *mm;
+	struct vm_area_struct *vma;
+	const char *file_name;
+	char task_name [TASK_COMM_LEN];
+	get_task_comm(task_name,current);
+	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
+	  	mm = current->mm;
+		for (vma = mm->mmap ; vma ; vma = vma->vm_next){
+			if (vma->vm_file){
+				file_name = file_dentry(vma->vm_file)->d_iname;// this file_name can be checked
+				printk("file_name is: %s", file_name);
+			} 	       
+			else if (vma->vm_start <= vma->vm_mm->start_stack &&
+				 vma->vm_end >= vma->vm_mm->start_stack){
+				printk ("[stack]");
+				vma->vm_flags |= VM_ALLOC_PVT_CORE;
+			}
+			else { //vma->vm_file is null
+				printk ("file_name is null so [anon]");
+			}
+		}
+	}
+	return 1;
+	
+}
+
+
+/*
  * These are the functions used to load ELF style executables and shared
  * libraries.  There is no binary dependent code anywhere else.
  */
@@ -676,7 +869,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
  	unsigned long load_addr = 0, load_bias = 0;
 	int load_addr_set = 0;
 	unsigned long error;
-	struct elf_phdr *elf_ppnt, *elf_phdata, *interp_elf_phdata = NULL;
+	struct elf_phdr *elf_ppnt, *elf_phdata,*interp_elf_phdata = NULL;
 	unsigned long elf_bss, elf_brk;
 	int bss_prot = 0;
 	int retval, i;
@@ -719,6 +912,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
 	if (!elf_phdata)
 		goto out;
 
+	
 	elf_ppnt = elf_phdata;
 	for (i = 0; i < loc->elf_ex.e_phnum; i++, elf_ppnt++) {
 		char *elf_interpreter;
@@ -1105,6 +1299,9 @@ out_free_interp:
 	current->mm->start_data = start_data;
 	current->mm->end_data = end_data;
 	current->mm->start_stack = bprm->p;
+	//Gol
+	//current->mm->cpu_id = 0;
+	//Gol
 
 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
 		/*
@@ -1152,13 +1349,25 @@ out_free_interp:
 
 	finalize_exec(bprm);
 	start_thread(regs, elf_entry, bprm->p);
+
+
+	// call here
+        if(!section_parser(current,&loc->elf_ex, bprm->file)){
+	  printk("[for now] something in section_parser went wrong!!!\n");
+	}
+	
+	if (!vma_marker(/*current*/))
+	{
+	  printk("[for now] something in vma_marker() went wrong!!!\n");
+	}
+
 	retval = 0;
 out:
 	kfree(loc);
 out_ret:
 	return retval;
 
-	/* error cleanup */
+/* error cleanup*/
 out_free_dentry:
 	kfree(interp_elf_phdata);
 	allow_write_access(interpreter);
