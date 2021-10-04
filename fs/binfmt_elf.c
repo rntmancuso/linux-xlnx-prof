@@ -787,9 +787,9 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 	unsigned int size;
 	loff_t pos;
 	struct elf_shdr *elf_shpnt, *elf_shdata = NULL;
-	char task_name [TASK_COMM_LEN];
-	get_task_comm(task_name,task);
-	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
+	//char task_name [TASK_COMM_LEN];
+	//get_task_comm(task_name,task);
+	//if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
 		elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
 		if (!elf_shdata)
 			goto out;
@@ -810,21 +810,22 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 					//added_sec = NULL;
 				}
 				printk("added_sec after kernel_read:%d\n",added_sec);
-				task->mm->cpu_id = added_sec;
+				current->mm->cpu_id = added_sec;
 			}
 
 		}
 		kfree (strings);
 		kfree (elf_shdata);
-	}
+		//	}
 
-	return 1;
+	return added_sec;
 
 out:
 	kfree(elf_shdata);
 	elf_shdata = NULL;
+	printk("before return -1\n");
 
-	return 0;
+	return -1;
 }
 
 /*for finding desired VMAs and flag them with VM_PVT... flag
@@ -872,7 +873,8 @@ static int load_elf_binary(struct linux_binprm *bprm)
 	struct elf_phdr *elf_ppnt, *elf_phdata,*interp_elf_phdata = NULL;
 	unsigned long elf_bss, elf_brk;
 	int bss_prot = 0;
-	int retval, i;
+	int retval, i, cpu_no;
+	char task_name [TASK_COMM_LEN];
 	unsigned long elf_entry;
 	unsigned long interp_load_addr = 0;
 	unsigned long start_code, end_code, start_data, end_data;
@@ -1299,9 +1301,7 @@ out_free_interp:
 	current->mm->start_data = start_data;
 	current->mm->end_data = end_data;
 	current->mm->start_stack = bprm->p;
-	//Gol
-	//current->mm->cpu_id = 0;
-	//Gol
+       
 
 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
 		/*
@@ -1352,13 +1352,21 @@ out_free_interp:
 
 
 	// call here
-        if(!section_parser(current,&loc->elf_ex, bprm->file)){
-	  printk("[for now] something in section_parser went wrong!!!\n");
+        get_task_comm(task_name,current);
+	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
+		printk("inside strcmp \n");
+		cpu_no = section_parser(current,&loc->elf_ex, bprm->file);
+		printk("cpu_no is:%d\n",cpu_no);
+		if(cpu_no < 0){
+			printk("[for now] something in section_parser went wrong!!!\n");
+		}
 	}
+	//  else
+	//current->mm->cpu_id = cpu_no; 
 	
 	if (!vma_marker(/*current*/))
 	{
-	  printk("[for now] something in vma_marker() went wrong!!!\n");
+		printk("[for now] something in vma_marker() went wrong!!!\n");
 	}
 
 	retval = 0;
