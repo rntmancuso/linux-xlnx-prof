@@ -65,7 +65,7 @@
 #endif
 
 //Gol
-static int vma_marker(/*struct task_struct * task*/void);
+static int vma_marker(void);
 static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex,
                            struct file *bprm_file);
 //Gol
@@ -787,36 +787,34 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 	unsigned int size;
 	loff_t pos;
 	struct elf_shdr *elf_shpnt, *elf_shdata = NULL;
-	//char task_name [TASK_COMM_LEN];
-	//get_task_comm(task_name,task);
-	//if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
-		elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
-		if (!elf_shdata)
-			goto out;
-		strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
-		// check for strings later
-		elf_shpnt = elf_shdata;
-		for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
-			printk("section name is: %s\n",&strings[elf_shpnt->sh_name]);
-			if ((strcmp(&strings[elf_shpnt->sh_name],".add_elf")) == 0){
-				printk("added section is found\n");
-				size = elf_shpnt->sh_size;
-				pos = elf_shpnt->sh_offset;
-				//added_sec = kmalloc(size, GFP_KERNEL);
-				ret = kernel_read(bprm_file, &added_sec, sizeof(int), &pos);
-				if (ret != size) {
-					printk("kernel_read EROOR\n");
-					//kfree(added_sec);
-					//added_sec = NULL;
-				}
-				printk("added_sec after kernel_read:%d\n",added_sec);
-				current->mm->cpu_id = added_sec;
-			}
 
+	elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
+	if (!elf_shdata)
+		goto out;
+	strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
+	// check for strings later
+	elf_shpnt = elf_shdata;
+	for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
+		printk("section name is: %s\n",&strings[elf_shpnt->sh_name]);
+		if ((strcmp(&strings[elf_shpnt->sh_name],".add_elf")) == 0){
+			printk("added section is found\n");
+			size = elf_shpnt->sh_size;
+			pos = elf_shpnt->sh_offset;
+			//added_sec = kmalloc(size, GFP_KERNEL);
+			ret = kernel_read(bprm_file, &added_sec, sizeof(int), &pos);
+			if (ret != size) {
+				printk("kernel_read EROOR\n");
+				//kfree(added_sec);
+				//added_sec = NULL;
+			}
+			printk("added_sec after kernel_read:%d\n",added_sec);
+			current->mm->cpu_id = added_sec;
 		}
-		kfree (strings);
-		kfree (elf_shdata);
-		//	}
+
+	}
+	kfree (strings);
+	kfree (elf_shdata);
+	       
 
 	return added_sec;
 
@@ -830,7 +828,7 @@ out:
 
 /*for finding desired VMAs and flag them with VM_PVT... flag
   at the end of load_elf_binary()*/
-static int vma_marker(/*struct task_struct * task*/)
+static int vma_marker()
 { 
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
@@ -1354,7 +1352,7 @@ out_free_interp:
 	// call here
         get_task_comm(task_name,current);
 	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
-		printk("inside strcmp \n");
+		printk("inside strcmp before calling section_parser \n");
 		cpu_no = section_parser(current,&loc->elf_ex, bprm->file);
 		printk("cpu_no is:%d\n",cpu_no);
 		if(cpu_no < 0){
@@ -1364,7 +1362,7 @@ out_free_interp:
 	//  else
 	//current->mm->cpu_id = cpu_no; 
 	
-	if (!vma_marker(/*current*/))
+	if (!vma_marker())
 	{
 		printk("[for now] something in vma_marker() went wrong!!!\n");
 	}
