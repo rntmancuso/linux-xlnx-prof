@@ -304,8 +304,8 @@ extern unsigned int kobjsize(const void *objp);
 #define VM_HIGH_ARCH_3	BIT(VM_HIGH_ARCH_BIT_3)
 #define VM_HIGH_ARCH_4	BIT(VM_HIGH_ARCH_BIT_4)
 #else
-#define VM_ALLOC_PVT_BIT        32
-#define VM_ALLOC_PVT    BIT(VM_ALLOC_PVT_BIT)
+#define VM_ALLOC_PVT_CORE_BIT        32
+#define VM_ALLOC_PVT_CORE    BIT(VM_ALLOC_PVT_CORE_BIT)
 #endif /* CONFIG_ARCH_USES_HIGH_VMA_FLAGS */
 
 #ifdef CONFIG_ARCH_HAS_PKEYS
