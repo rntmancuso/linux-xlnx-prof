@@ -27,6 +27,7 @@
  * and size this cpu_bitmask to NR_CPUS.
  */
 struct mm_struct init_mm = {
+        .prof_info      = NULL,
 	.mm_rb		= RB_ROOT,
 	.pgd		= swapper_pg_dir,
 	.mm_users	= ATOMIC_INIT(2),
