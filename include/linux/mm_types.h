@@ -25,7 +25,9 @@
 
 struct address_space;
 struct mem_cgroup;
-
+struct profile{
+  int cpu_id;
+};
 /*
  * Each physical page in the system has a struct page associated with
  * it to keep track of whatever it is we are using the page for at the
@@ -369,7 +371,7 @@ struct core_state {
 struct kioctx_table;
 struct mm_struct {
 	struct {
-	        int cpu_id;
+	  //int cpu_id;
 		struct vm_area_struct *mmap;		/* list of VMAs */
 		struct rb_root mm_rb;
 		u64 vmacache_seqnum;                   /* per-thread vmacache */
@@ -527,11 +529,13 @@ struct mm_struct {
 		struct work_struct async_put_work;
 	} __randomize_layout;
 
+        struct profile *prof_info; //profile info for the process
 	/*
 	 * The mm_cpumask needs to be at the end of mm_struct, because it
 	 * is dynamically sized based on nr_cpu_ids.
 	 */
 	unsigned long cpu_bitmap[];
+
 };
 
 extern struct mm_struct init_mm;
