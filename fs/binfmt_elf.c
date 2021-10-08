@@ -808,7 +808,8 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 				//added_sec = NULL;
 			}
 			printk("added_sec after kernel_read:%d\n",added_sec);
-			current->mm->cpu_id = added_sec;
+			current->mm->prof_info = kmalloc(sizeof(struct profile),GFP_KERNEL);
+			current->mm->prof_info->cpu_id = added_sec;
 		}
 
 	}
@@ -828,30 +829,28 @@ out:
 
 /*for finding desired VMAs and flag them with VM_PVT... flag
   at the end of load_elf_binary()*/
+//find text, bss and data TODO
 static int vma_marker()
 { 
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
 	const char *file_name;
-	char task_name [TASK_COMM_LEN];
-	get_task_comm(task_name,current);
-	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
-	  	mm = current->mm;
-		for (vma = mm->mmap ; vma ; vma = vma->vm_next){
-			if (vma->vm_file){
-				file_name = file_dentry(vma->vm_file)->d_iname;// this file_name can be checked
-				printk("file_name is: %s", file_name);
-			} 	       
-			else if (vma->vm_start <= vma->vm_mm->start_stack &&
-				 vma->vm_end >= vma->vm_mm->start_stack){
-				printk ("[stack]");
-				vma->vm_flags |= VM_ALLOC_PVT_CORE;
-			}
-			else { //vma->vm_file is null
-				printk ("file_name is null so [anon]");
-			}
+	mm = current->mm;
+	for (vma = mm->mmap ; vma ; vma = vma->vm_next){
+		if (vma->vm_file){
+			file_name = file_dentry(vma->vm_file)->d_iname;// this file_name can be checked
+			printk("file_name is: %s", file_name);
+		} 	       
+		else if (vma->vm_start <= vma->vm_mm->start_stack &&
+			 vma->vm_end >= vma->vm_mm->start_stack){
+			printk ("[stack]");
+			vma->vm_flags |= VM_ALLOC_PVT_CORE;
+		}
+		else { //vma->vm_file is null
+			printk ("file_name is null so [anon]");
 		}
 	}
+	
 	return 1;
 	
 }
@@ -1350,22 +1349,20 @@ out_free_interp:
 
 
 	// call here
-        get_task_comm(task_name,current);
-	if(strncmp(task_name,"two_loops_2",TASK_COMM_LEN) == 0) {
-		printk("inside strcmp before calling section_parser \n");
+	if (current && current->mm && current->mm->prof_info)
+	{
+		printk("before calling section_parser, inside the if \n");
 		cpu_no = section_parser(current,&loc->elf_ex, bprm->file);
 		printk("cpu_no is:%d\n",cpu_no);
 		if(cpu_no < 0){
 			printk("[for now] something in section_parser went wrong!!!\n");
 		}
+		if (!vma_marker())
+		{
+			printk("[for now] something in vma_marker() went wrong!!!\n");
+		}
 	}
-	//  else
-	//current->mm->cpu_id = cpu_no; 
-	
-	if (!vma_marker())
-	{
-		printk("[for now] something in vma_marker() went wrong!!!\n");
-	}
+    
 
 	retval = 0;
 out:
