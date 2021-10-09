@@ -1573,9 +1573,9 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 		if (file && is_file_hugepages(file))
 			vm_flags |= VM_NORESERVE;
 	}
-	
-	printk("in do_mmap() before if\n");
-	if (current && current->mm && current->mm->prof_info)
+        
+
+	if (current->mm->prof_info)
 	{
 		printk("current->mm->prof_info->cpu_id : %d\n", current->mm->prof_info->cpu_id);
 		vm_flags |= VM_ALLOC_PVT_CORE;
