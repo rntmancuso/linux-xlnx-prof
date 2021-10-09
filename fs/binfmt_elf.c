@@ -792,20 +792,16 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 	if (!elf_shdata)
 		goto out;
 	strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
-	// check for strings later
+	// TODO check for string?
 	elf_shpnt = elf_shdata;
 	for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
-		printk("section name is: %s\n",&strings[elf_shpnt->sh_name]);
 		if ((strcmp(&strings[elf_shpnt->sh_name],".add_elf")) == 0){
 			printk("added section is found\n");
 			size = elf_shpnt->sh_size;
 			pos = elf_shpnt->sh_offset;
-			//added_sec = kmalloc(size, GFP_KERNEL);
 			ret = kernel_read(bprm_file, &added_sec, sizeof(int), &pos);
 			if (ret != size) {
-				printk("kernel_read EROOR\n");
-				//kfree(added_sec);
-				//added_sec = NULL;
+				printk("kernel_read ERROR\n");
 			}
 			printk("added_sec after kernel_read:%d\n",added_sec);
 			current->mm->prof_info = kmalloc(sizeof(struct profile),GFP_KERNEL);
@@ -822,7 +818,6 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
 out:
 	kfree(elf_shdata);
 	elf_shdata = NULL;
-	printk("before return -1\n");
 
 	return -1;
 }
@@ -837,9 +832,10 @@ static int vma_marker()
 	const char *file_name;
 	mm = current->mm;
 	for (vma = mm->mmap ; vma ; vma = vma->vm_next){
-		if (vma->vm_file){
+	  if (vma->vm_file){// file-mapped vma
 			file_name = file_dentry(vma->vm_file)->d_iname;// this file_name can be checked
 			printk("file_name is: %s", file_name);
+			vma->vm_flags |= VM_ALLOC_PVT_CORE; //flagging all file-mapped VMAs
 		} 	       
 		else if (vma->vm_start <= vma->vm_mm->start_stack &&
 			 vma->vm_end >= vma->vm_mm->start_stack){
@@ -1349,17 +1345,15 @@ out_free_interp:
 
 
 	// call here
-	if (current && current->mm && current->mm->prof_info)
+	if (current && current->mm)
 	{
-		printk("before calling section_parser, inside the if \n");
-		cpu_no = section_parser(current,&loc->elf_ex, bprm->file);
-		printk("cpu_no is:%d\n",cpu_no);
-		if(cpu_no < 0){
-			printk("[for now] something in section_parser went wrong!!!\n");
-		}
-		if (!vma_marker())
-		{
-			printk("[for now] something in vma_marker() went wrong!!!\n");
+     
+		section_parser(current,&loc->elf_ex, bprm->file);
+		if (current->mm->prof_info){
+			if (!vma_marker())
+			{
+				printk("[for now] something in vma_marker() went wrong!!!\n");
+			}
 		}
 	}
     
