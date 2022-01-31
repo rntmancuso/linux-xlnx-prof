@@ -23,6 +23,10 @@
 
 #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
 
+//Gol
+extern void (*cacheability_modifier)(unsigned long int user_vaddr, struct vm_area_struct *vma);
+//Gol
+
 struct memory_block {
 	unsigned long start_section_nr;
 	unsigned long state;		/* serialized by the dev->lock */
