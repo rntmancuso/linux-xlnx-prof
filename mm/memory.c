@@ -95,6 +95,12 @@ struct page *mem_map;
 EXPORT_SYMBOL(mem_map);
 #endif
 
+
+//Gol
+void (*cacheability_modifier)(unsigned long int user_vaddr, struct vm_area_struct *vma) = NULL;
+EXPORT_SYMBOL(cacheability_modifier);
+//Gol
+
 /*
  * A number of key systems in x86 including ioremap() rely on the assumption
  * that high_memory defines the upper bound on direct map memory, then end
@@ -3869,6 +3875,15 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 	if (ptep_set_access_flags(vmf->vma, vmf->address, vmf->pte, entry,
 				vmf->flags & FAULT_FLAG_WRITE)) {
 		update_mmu_cache(vmf->vma, vmf->address, vmf->pte);
+
+		//if (current && current->mm && current->mm->prof_info) {
+		  //if (vmf->vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+			//make the page non-cacheable
+			//printk("inside memory.c\n");
+			//cacheability_modifier(vmf->address,vmf->vma);
+			//printk("inside memory.c\n");
+			//}
+			//}
 	} else {
 		/*
 		 * This is needed only for protection faults but the arch code
@@ -3879,6 +3894,21 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 		if (vmf->flags & FAULT_FLAG_WRITE)
 			flush_tlb_fix_spurious_fault(vmf->vma, vmf->address);
 	}
+
+	//call back func here
+	
+	//Gol
+	//call back function should be inserted here
+	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+	/* if (current && current->mm && current->mm->prof_info) { */
+	/* 	if (vmf->vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) { */
+	/* 		//make the page non-cacheable */
+	/* 		//printk("inside memory.c\n"); */
+	/* 		cacheability_modifier(vmf->address,vmf->vma); */
+	//printk("inside memory.c\n"); 
+	/* 	} */
+	/* } */
+	//Gol
 unlock:
 	pte_unmap_unlock(vmf->pte, vmf->ptl);
 	return 0;
@@ -3970,6 +4000,19 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 		}
 	}
 
+	//Gol
+	//call back function should be inserted here
+	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+	if (current && current->mm && current->mm->prof_info) {
+	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+			//make the page non-cacheable
+			//printk("inside memory.c\n");
+			cacheability_modifier(vmf.address,vmf.vma);
+	                printk("inside memory.c\n"); 
+		}
+	}
+	//Gol
+		
 	return handle_pte_fault(&vmf);
 }
 
@@ -4020,7 +4063,7 @@ vm_fault_t handle_mm_fault(struct vm_area_struct *vma, unsigned long address,
 		if (task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM))
 			mem_cgroup_oom_synchronize(false);
 	}
-
+	
 	return ret;
 }
 EXPORT_SYMBOL_GPL(handle_mm_fault);
