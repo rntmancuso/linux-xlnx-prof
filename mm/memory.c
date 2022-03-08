@@ -97,7 +97,7 @@ EXPORT_SYMBOL(mem_map);
 
 
 //Gol
-void (*cacheability_modifier)(unsigned long int user_vaddr, struct vm_area_struct *vma) = NULL;
+void (*cacheability_modifier)(unsigned long int user_vaddr, struct vm_area_struct *vma/*, pte_t *pte*/) = NULL;
 EXPORT_SYMBOL(cacheability_modifier);
 //Gol
 
@@ -2328,6 +2328,8 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
 							      vmf->address);
 		if (!new_page)
 			goto oom;
+		//GOL
+		vmf->flags |= IS_PROC_PAGE;
 	} else {
 		new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma,
 				vmf->address);
@@ -3008,7 +3010,10 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	page = alloc_zeroed_user_highpage_movable(vma, vmf->address);
 	if (!page)
 		goto oom;
-
+	//Gol
+	vmf->flags |= IS_PROC_PAGE;
+	
+	
 	if (mem_cgroup_try_charge_delay(page, vma->vm_mm, GFP_KERNEL, &memcg,
 					false))
 		goto oom_free_page;
@@ -3811,6 +3816,7 @@ static vm_fault_t wp_huge_pud(struct vm_fault *vmf, pud_t orig_pud)
 static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 {
 	pte_t entry;
+	unsigned int retval;
 
 	if (unlikely(pmd_none(*vmf->pmd))) {
 		/*
@@ -3849,9 +3855,12 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 	}
 
 	if (!vmf->pte) {
-		if (vma_is_anonymous(vmf->vma))
-			return do_anonymous_page(vmf);
-		else
+	  if (vma_is_anonymous(vmf->vma)){
+	    //Gol
+			retval = do_anonymous_page(vmf);
+			//vmf->flags |= IS_PROC_PAGE;
+			return retval;
+	  }	else
 			return do_fault(vmf);
 	}
 
@@ -3935,6 +3944,7 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	pgd_t *pgd;
 	p4d_t *p4d;
 	vm_fault_t ret;
+	unsigned int retval;
 
 	pgd = pgd_offset(mm, address);
 	p4d = p4d_alloc(mm, pgd, address);
@@ -3999,21 +4009,39 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 			}
 		}
 	}
-
-	//Gol
-	//call back function should be inserted here
+//call back function should be inserted here
 	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
 	if (current && current->mm && current->mm->prof_info) {
-	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
-			//make the page non-cacheable
-			//printk("inside memory.c\n");
-			cacheability_modifier(vmf.address,vmf.vma);
-	                printk("inside memory.c\n"); 
+	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE) {
+			//if (vmf.flags & IS_PROC_PAGE) {
+				//make the page non-cacheable
+				//printk("retval = %x, address = 0x%lx, vmf.pte = 0x%lx vmf.gfp_mask = %x\n",retval,vmf.address,vmf.pte,vmf.gfp_mask);
+				//if (vmf.pte) printk("vmf.pte is not null\n");
+				//cacheability_modifier(vmf.address,vmf.vma/*,vmf.pte*/);
+				printk("before cacheability_modifier\n");
+				//}
 		}
 	}
 	//Gol
+	retval = handle_pte_fault(&vmf);
+	//call back function should be inserted here
+	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+	if (current && current->mm && current->mm->prof_info) {
+	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE) {
+		  if (vmf.flags & IS_PROC_PAGE) {
+			//make the page non-cacheable
+		    printk("retval = %x, address = 0x%lx, vmf.pte = 0x%lx vmf.gfp_mask = %x\n",retval,vmf.address,vmf.pte,vmf.gfp_mask);
+		   //if (vmf.pte) printk("vmf.pte is not null\n");
+		  cacheability_modifier(vmf.address,vmf.vma/*,vmf.pte*/);
+		  printk("after cacheability_modifier\n");
+		  }
+		}
+	}
+
+	return retval;
+	//Gol
 		
-	return handle_pte_fault(&vmf);
+	//return handle_pte_fault(&vmf);
 }
 
 /*
