@@ -834,7 +834,7 @@ static int vma_marker()
 	for (vma = mm->mmap ; vma ; vma = vma->vm_next){
 	  if (vma->vm_file){// file-mapped vma
 			file_name = file_dentry(vma->vm_file)->d_iname;// this file_name can be checked
-			printk("file_name is: %s", file_name);
+			//printk("we are not mapping %s\n", file_name);
 			vma->vm_flags |= VM_ALLOC_PVT_CORE; //flagging all file-mapped VMAs
 		} 	       
 		else if (vma->vm_start <= vma->vm_mm->start_stack &&
@@ -843,7 +843,7 @@ static int vma_marker()
 			vma->vm_flags |= VM_ALLOC_PVT_CORE;
 		}
 		else { //vma->vm_file is null
-			printk ("file_name is null so [anon]");
+			printk ("file_name is null so [anon], not mapped");
 		}
 	}
 	
@@ -866,8 +866,8 @@ static int load_elf_binary(struct linux_binprm *bprm)
 	struct elf_phdr *elf_ppnt, *elf_phdata,*interp_elf_phdata = NULL;
 	unsigned long elf_bss, elf_brk;
 	int bss_prot = 0;
-	int retval, i, cpu_no;
-	char task_name [TASK_COMM_LEN];
+	int retval, i; /*cpu_no;*/
+	//char task_name [TASK_COMM_LEN];
 	unsigned long elf_entry;
 	unsigned long interp_load_addr = 0;
 	unsigned long start_code, end_code, start_data, end_data;
