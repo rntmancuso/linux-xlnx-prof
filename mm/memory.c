@@ -3885,14 +3885,6 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 				vmf->flags & FAULT_FLAG_WRITE)) {
 		update_mmu_cache(vmf->vma, vmf->address, vmf->pte);
 
-		//if (current && current->mm && current->mm->prof_info) {
-		  //if (vmf->vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
-			//make the page non-cacheable
-			//printk("inside memory.c\n");
-			//cacheability_modifier(vmf->address,vmf->vma);
-			//printk("inside memory.c\n");
-			//}
-			//}
 	} else {
 		/*
 		 * This is needed only for protection faults but the arch code
@@ -3904,20 +3896,6 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 			flush_tlb_fix_spurious_fault(vmf->vma, vmf->address);
 	}
 
-	//call back func here
-	
-	//Gol
-	//call back function should be inserted here
-	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
-	/* if (current && current->mm && current->mm->prof_info) { */
-	/* 	if (vmf->vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) { */
-	/* 		//make the page non-cacheable */
-	/* 		//printk("inside memory.c\n"); */
-	/* 		cacheability_modifier(vmf->address,vmf->vma); */
-	//printk("inside memory.c\n"); 
-	/* 	} */
-	/* } */
-	//Gol
 unlock:
 	pte_unmap_unlock(vmf->pte, vmf->ptl);
 	return 0;
@@ -4009,32 +3987,30 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 			}
 		}
 	}
-//call back function should be inserted here
-	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
+
+        //Gol //test
 	if (current && current->mm && current->mm->prof_info) {
 	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE) {
-			//if (vmf.flags & IS_PROC_PAGE) {
-				//make the page non-cacheable
-				//printk("retval = %x, address = 0x%lx, vmf.pte = 0x%lx vmf.gfp_mask = %x\n",retval,vmf.address,vmf.pte,vmf.gfp_mask);
-				//if (vmf.pte) printk("vmf.pte is not null\n");
-				//cacheability_modifier(vmf.address,vmf.vma/*,vmf.pte*/);
-				printk("before cacheability_modifier\n");
-				//}
+
+			printk("before cacheability_modifier\n");
+		       
 		}
 	}
-	//Gol
+	//Gol //test
+	
 	retval = handle_pte_fault(&vmf);
+
+	//Gol
 	//call back function should be inserted here
-	//if (vma->vm_flags & VM_ALLOC_PVT_CORE_BIT) {
 	if (current && current->mm && current->mm->prof_info) {
 	  	if (vmf.vma->vm_flags & VM_ALLOC_PVT_CORE) {
-		  if (vmf.flags & IS_PROC_PAGE) {
-			//make the page non-cacheable
-		    printk("retval = %x, address = 0x%lx, vmf.pte = 0x%lx vmf.gfp_mask = %x\n",retval,vmf.address,vmf.pte,vmf.gfp_mask);
-		   //if (vmf.pte) printk("vmf.pte is not null\n");
-		  cacheability_modifier(vmf.address,vmf.vma/*,vmf.pte*/);
-		  printk("after cacheability_modifier\n");
-		  }
+			if (vmf.flags & IS_PROC_PAGE) {
+				//make the page non-cacheable
+				printk("retval = %x, address = 0x%lx, vmf.pte = 0x%lx vmf.gfp_mask = %x\n",retval,vmf.address,vmf.pte,vmf.gfp_mask);
+				//if (vmf.pte) printk("vmf.pte is not null\n");
+				cacheability_modifier(vmf.address,vmf.vma/*,vmf.pte*/);
+				printk("after cacheability_modifier\n");
+			}
 		}
 	}
 
