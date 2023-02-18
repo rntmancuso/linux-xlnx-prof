@@ -11,6 +11,7 @@ struct filename;
 
 #define CORENAME_MAX_SIZE 128
 
+
 /*
  * This structure is used to hold the arguments that are used when loading binaries.
  */
@@ -69,6 +70,9 @@ struct linux_binprm {
 
 #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
 #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
+
+//Gol
+extern struct profile* (*profile_decomposer)(char*);
 
 /* fd of the binary should be passed to the interpreter */
 #define BINPRM_FLAGS_EXECFD_BIT 1
