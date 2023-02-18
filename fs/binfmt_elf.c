@@ -45,7 +45,8 @@
 #include <asm/param.h>
 #include <asm/page.h>
 #include "internal.h"
-//GOL
+
+//extern int (*profile_decomposer)(int);
 /* #ifndef test_kmod */
 /* int test_kmod; */
 /* EXPORT_SYMBOL(test_kmod); */
@@ -70,6 +71,10 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
                            struct file *bprm_file);
 //Gol
 static int load_elf_binary(struct linux_binprm *bprm);
+
+//GOL
+//extern int (*profile_decomposer)(int);
+//GOL
 
 #ifdef CONFIG_USELIB
 static int load_elf_library(struct file *);
@@ -536,7 +541,7 @@ static struct elf_shdr *load_elf_shdrs(const struct elfhdr *elf_ex,
 	if (elf_ex->e_shentsize != sizeof(struct elf_shdr))
 		goto out;
 
-	/* Sanity check the number of program headers... */
+	/* Sanity check the number of program headers (sec header?)... */
 	/* ...and their total size. */
 	size = sizeof(struct elf_shdr) * elf_ex->e_shnum;
 	if (size == 0 || size > 65536 || size > ELF_MIN_ALIGN)
@@ -546,7 +551,7 @@ static struct elf_shdr *load_elf_shdrs(const struct elfhdr *elf_ex,
 	if (!elf_shdata)
 		goto out;
 
-	/* Read in the program headers */
+	/* Read in the (data part?) program headers (sec hdr?) */
 	retval = kernel_read(elf_file, elf_shdata, size, &pos);
 	if (retval != size) {
 		err = (retval < 0) ? retval : -EIO;
@@ -782,44 +787,58 @@ out:
 static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex,
 			   struct file *bprm_file){
        
-	int i, ret, added_sec;
-	char* strings;
-	unsigned int size;
-	loff_t pos;
-	struct elf_shdr *elf_shpnt, *elf_shdata = NULL;
+  int i, ret/*, added_sec*/;
+  char *strings, *profile_section;
+  unsigned int size;
+  loff_t pos;
+  struct elf_shdr *elf_shpnt, *elf_shdata = NULL;
 
-	elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
-	if (!elf_shdata)
-		goto out;
-	strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
-	// TODO check for string?
-	elf_shpnt = elf_shdata;
-	for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
-		if ((strcmp(&strings[elf_shpnt->sh_name],".add_elf")) == 0){
-			printk("added section is found\n");
-			size = elf_shpnt->sh_size;
-			pos = elf_shpnt->sh_offset;
-			ret = kernel_read(bprm_file, &added_sec, sizeof(int), &pos);
-			if (ret != size) {
-				printk("kernel_read ERROR\n");
-			}
-			printk("added_sec after kernel_read:%d\n",added_sec);
-			current->mm->prof_info = kmalloc(sizeof(struct profile),GFP_KERNEL);
-			current->mm->prof_info->cpu_id = added_sec;
-		}
+  elf_shdata = load_elf_shdrs(elf_ex, bprm_file);
+  if (!elf_shdata)
+    goto out;
+  strings = load_strings (elf_ex,bprm_file, &elf_shdata[elf_ex->e_shstrndx]);
 
+  // TODO check for string?
+  elf_shpnt = elf_shdata; //shpnt is the section that we are in now?
+  for (i = 0; i < elf_ex->e_shnum; i++, elf_shpnt++){
+    if ((strcmp(&strings[elf_shpnt->sh_name],".profile")) == 0){
+      printk("added section is found\n");
+      size = elf_shpnt->sh_size; //size of this section (.profile)
+      pos = elf_shpnt->sh_offset;// .profile sec file offset
+
+      profile_section = kmalloc(size,GFP_KERNEL);
+      if (!profile_section)
+	{
+	  printk("cannot allocate profile_section buffer\n");
 	}
-	kfree (strings);
-	kfree (elf_shdata);
+      printk("PROFILE_SECTION : %p\n", profile_section);
+      ret = kernel_read(bprm_file, profile_section, size, &pos);
+      if (ret != size) {
+	printk("kernel_read ERROR\n");
+      }
+      printk("profile section after kernel_read\n");
+      //FOR TEST
+      //current->mm->prof_info = NULL;
+      current->mm->prof_info = kmalloc(sizeof(struct profile),GFP_KERNEL);
+      ///current->mm->prof_info->cpu_id = 2 /*added_sec*/;
+      current->mm->prof_info = profile_decomposer(profile_section);// if (profile_decomposer != NULL)
+      printk("current->mm->prof_info->profile_len is %d\n",current->mm->prof_info->profile_len);
+      current->mm->prof_info = NULL;
+      kfree(profile_section);
+    }
+
+  }
+  kfree (strings);
+  kfree (elf_shdata);
 	       
 
-	return added_sec;
+  return 0;
 
-out:
-	kfree(elf_shdata);
-	elf_shdata = NULL;
+ out:
+  kfree(elf_shdata);
+  elf_shdata = NULL;
 
-	return -1;
+  return -1;
 }
 
 /*for finding desired VMAs and flag them with VM_PVT... flag
@@ -1349,12 +1368,12 @@ out_free_interp:
 	{
      
 		section_parser(current,&loc->elf_ex, bprm->file);
-		if (current->mm->prof_info){
-			if (!vma_marker())
-			{
-				printk("[for now] something in vma_marker() went wrong!!!\n");
-			}
-		}
+		///if (current->mm->prof_info){
+		///	if (!vma_marker())
+		///	{
+		///printk("[for now] something in vma_marker() went wrong!!!\n");
+				///	}
+				///	}
 	}
     
 
