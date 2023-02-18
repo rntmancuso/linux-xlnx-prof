@@ -319,6 +319,11 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 	end = vma->vm_end;
 	show_vma_header_prefix(m, start, end, flags, pgoff, dev, ino);
 
+	/* Print the unique ID of current VMA */
+	seq_putc(m, '(');
+	seq_put_decimal_ull(m, "", vma->vma_id);
+	seq_putc(m, ')');
+	
 	/*
 	 * Print the dentry name for named mappings, and a
 	 * special [heap] marker for the heap:
@@ -352,11 +357,12 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 			name = "[stack]";
 	}
 
-done:
+done:	
 	if (name) {
 		seq_pad(m, ' ');
 		seq_puts(m, name);
 	}
+	
 	seq_putc(m, '\n');
 }
 
