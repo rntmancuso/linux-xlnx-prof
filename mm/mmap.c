@@ -663,6 +663,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
 		i_mmap_unlock_write(mapping);
 
 	mm->map_count++;
+	vma->vma_id = mm->map_id_tracker++;
 	validate_mm(mm);
 }
 
@@ -680,6 +681,7 @@ static void __insert_vm_struct(struct mm_struct *mm, struct vm_area_struct *vma)
 		BUG();
 	__vma_link(mm, vma, prev, rb_link, rb_parent);
 	mm->map_count++;
+	vma->vma_id = mm->map_id_tracker++;
 }
 
 static __always_inline void __vma_unlink_common(struct mm_struct *mm,
@@ -1574,10 +1576,13 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 			vm_flags |= VM_NORESERVE;
 	}
         
-
+	///TEST
+	//GOL
+	//this is for flagging the heap (just heap?)
+		
 	if (current->mm->prof_info)
-	{
-		printk("current->mm->prof_info->cpu_id : %d\n", current->mm->prof_info->cpu_id);
+	{		
+		//printk("current->mm->prof_info->cpu_id : %d\n", current->mm->prof_info->cpu_id);
 		vm_flags |= VM_ALLOC_PVT_CORE;
 	}
 
@@ -1587,6 +1592,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	    ((vm_flags & VM_LOCKED) ||
 	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
 		*populate = len;
+
+
 	return addr;
 }
 
