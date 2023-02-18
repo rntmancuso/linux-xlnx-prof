@@ -122,6 +122,8 @@
 #define init_elf_binfmt		init_compat_elf_binfmt
 #define exit_elf_binfmt		exit_compat_elf_binfmt
 
+struct profile* (*profile_decomposer)(char*) = NULL;
+EXPORT_SYMBOL(profile_decomposer);
 /*
  * We share all the actual code with the native (64-bit) version.
  */
