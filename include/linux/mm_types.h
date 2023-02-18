@@ -17,17 +17,16 @@
 
 #include <asm/mmu.h>
 
+#include <uapi/linux/profiler_uapi.h>
+
 #ifndef AT_VECTOR_SIZE_ARCH
 #define AT_VECTOR_SIZE_ARCH 0
 #endif
 #define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
 
-
 struct address_space;
 struct mem_cgroup;
-struct profile{
-  int cpu_id;
-};
+
 /*
  * Each physical page in the system has a struct page associated with
  * it to keep track of whatever it is we are using the page for at the
@@ -345,6 +344,8 @@ struct vm_area_struct {
 	struct file * vm_file;		/* File we map to (can be NULL). */
 	void * vm_private_data;		/* was vm_pte (shared mem) */
 
+	unsigned int vma_id;
+	
 #ifdef CONFIG_SWAP
 	atomic_long_t swap_readahead_info;
 #endif
@@ -371,7 +372,6 @@ struct core_state {
 struct kioctx_table;
 struct mm_struct {
 	struct {
-	  //int cpu_id;
 		struct vm_area_struct *mmap;		/* list of VMAs */
 		struct rb_root mm_rb;
 		u64 vmacache_seqnum;                   /* per-thread vmacache */
@@ -425,6 +425,7 @@ struct mm_struct {
 		atomic_long_t pgtables_bytes;	/* PTE page table pages */
 #endif
 		int map_count;			/* number of VMAs */
+		int map_id_tracker;             /* track the next VMA ID to assign */ 
 
 		spinlock_t page_table_lock; /* Protects page tables and some
 					     * counters
@@ -528,7 +529,7 @@ struct mm_struct {
 #endif
 		struct work_struct async_put_work;
 	} __randomize_layout;
-
+  //Gol
         struct profile *prof_info; //profile info for the process
 	/*
 	 * The mm_cpumask needs to be at the end of mm_struct, because it
