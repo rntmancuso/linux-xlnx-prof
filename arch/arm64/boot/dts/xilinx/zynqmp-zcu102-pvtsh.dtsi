@@ -37,35 +37,84 @@
 		//          reg = <0x0 0x60000000 0x0 0x20000000>;
 		// };
 //}
-	reserved-memory {
-                #address-cells = <2>;
-                #size-cells = <2>;
-                ranges;
-                jailhouse_mem: jailhouse_mem@87d000000 {
-                         no-map;
-                         reg = <0x8 0x7d000000 0x0 0x03000000>;
-                };
-                // NOTE: cannot start from 0x0 because this DTB still
-                // has somewhere a mapping for e.g., the ethenet there
-                // and linux is not going to like it.
-                private_lo1: privatelo1@10000000 {
-                         reg = <0x0 0x10000000 0x0 0x10000000>;
-                };
-                private_lo2: privatelo2@20000000 {
-                         reg = <0x0 0x20000000 0x0 0x10000000>;
-                };
-                private_lo3: privatelo3@30000000 {
-                         reg = <0x0 0x30000000 0x0 0x10000000>;
-                };
-                private_lo4: privatelo4@40000000 {
-                         reg = <0x0 0x40000000 0x0 0x10000000>;
-                };
-                // NOTE: foo-private region to fill up as reserved
-                // the first 2GB RAM completly.
-                private_foo: privatefoo@50000000 {
-                         reg = <0x0 0x50000000 0x0 0x30000000>;
-                };
-        };
+	 //reserved-memory {
+                 // #address-cells = <2>;
+                 // #size-cells = <2>;
+                 // ranges;
+                 // jailhouse_mem: jailhouse_mem@87d000000 {
+                 //          no-map;
+                 //          reg = <0x8 0x7d000000 0x0 0x03000000>;
+                 // };
+                 // NOTE: cannot start from 0x0 because this DTB still
+                 // has somewhere a mapping for e.g., the ethenet there
+                 // and linux is not going to like it.
+                 // private_lo1: privatelo1@10000000 {
+                 //          reg = <0x0 0x10000000 0x0 0x10000000>;
+                 // };
+                 // private_lo2: privatelo2@20000000 {
+                 //          reg = <0x0 0x20000000 0x0 0x10000000>;
+                 // };
+                 // private_lo3: privatelo3@30000000 {
+                 //          reg = <0x0 0x30000000 0x0 0x10000000>;
+                 // };
+                 // private_lo4: privatelo4@40000000 {
+                 //          reg = <0x0 0x40000000 0x0 0x10000000>;
+                 // };
+                 // // NOTE: foo-private region to fill up as reserved
+                 // // the first 2GB RAM completly.
+                 // private_foo: privatefoo@50000000 {
+                 //          reg = <0x0 0x50000000 0x0 0x30000000>;
+                 // };
+         //};
 
 
-};
+//};
+
+	 ocm@fffc0000 {
+ 	           device_type = "memory";
+		   compatible = "genpool";
+ 	           reg = <0x0 0xfffc0000 0x0 0x40000>;
+ 	 };
+
+	 bram@a0000000 {
+ 	           device_type = "memory";
+		   compatible = "genpool";
+ 	           reg = <0x0 0xa0000000 0x0 0x100000>;
+ 	 };
+
+	 dram@10000000 {
+	 	   device_type = "memory";
+		   compatible = "genpool";
+		   reg = <0x0 0x10000000 0x0 0x10000000>;
+         };
+
+	 mig@400000000 {
+		   device_type = "memory";
+		   compatible = "genpool";
+		   reg = <0x4 0x00000000 0x0 0x10000000>;
+	 };
+
+
+ 	reserved-memory {
+                 #address-cells = <2>;
+                 #size-cells = <2>;
+                 ranges;
+                 jailhouse_mem: jailhouse_mem@87d000000 {
+                          no-map;
+                          reg = <0x8 0x7d000000 0x0 0x03000000>;
+                 };
+ 		 private_lo1: privatelo1@fffc0000 {
+                        reg = <0x0 0xfffc0000 0x0 0x40000>;
+                };
+		
+ 		private_lo2: privatelo2@10000000 {
+ 			 reg = <0x0 0x10000000 0x0 0x10000000>;
+ 		};
+		
+		private_lo3: privatelo3@a0000000 {
+ 			 reg = <0x0 0xa0000000 0x0 0x100000>;
+ 		};
+        
+         };
+
+ };
