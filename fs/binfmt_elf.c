@@ -822,7 +822,9 @@ static int section_parser (struct task_struct * task,const struct elfhdr *elf_ex
       current->mm->prof_info = kmalloc(sizeof(struct profile),GFP_KERNEL);
       ///current->mm->prof_info->cpu_id = 2 /*added_sec*/;
       current->mm->prof_info = profile_decomposer(profile_section);// if (profile_decomposer != NULL)
-      printk("current->mm->prof_info->profile_len is %d\n",current->mm->prof_info->profile_len);
+      printk("current->mm->prof_info->profile_len is %d (mm = 0x%08x)\n",
+	     current->mm->prof_info->profile_len,
+	     (unsigned long)(current->mm));
       current->mm->prof_info = NULL;
       kfree(profile_section);
     }
