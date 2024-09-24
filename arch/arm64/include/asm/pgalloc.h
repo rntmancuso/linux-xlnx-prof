@@ -22,14 +22,26 @@
 static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
 {
 	gfp_t gfp = GFP_PGTABLE_USER;
-	struct page *page;
+	struct page *page = NULL;
 
 	if (mm == &init_mm)
 		gfp = GFP_PGTABLE_KERNEL;
-
-	page = alloc_page(gfp);
+	//Gol
+	//test my hook
+	if(alloc_pvtpool_pgtble)// check for mm->profile inside the kernel module
+	  {
+	        printk("inside the alloc_pvtpool_pgtble\n");
+		//call our hook alloc_pvtpool_pgtble
+		page = alloc_pvtpool_pgtble(mm);
+	}
+	if (!page)
+	{
+	  //printk("if we are here, it means page was empty\n");
+		page = alloc_page(gfp);
+	}
 	if (!page)
 		return NULL;
+	
 	if (!pgtable_pmd_page_ctor(page)) {
 		__free_page(page);
 		return NULL;
@@ -41,6 +53,13 @@ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmdp)
 {
 	BUG_ON((unsigned long)pmdp & (PAGE_SIZE-1));
 	pgtable_pmd_page_dtor(virt_to_page(pmdp));
+	//Gol
+	//test my hook
+	if (free_pvtpool_pgtble)
+	  {
+	    if(free_pvtpool_pgtble((unsigned long)pmdp) == 0)
+	      return;
+	  }
 	free_page((unsigned long)pmdp);
 }
 
@@ -64,12 +83,20 @@ static inline void __pud_populate(pud_t *pudp, phys_addr_t pmdp, pudval_t prot)
 
 static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
 {
-	return (pud_t *)__get_free_page(GFP_PGTABLE_USER);
+  //  if(alloc_pvtpool_pgtble)
+  //return (pud_t *)alloc_pvtpool_pgtble(mm);
+  //else
+  return (pud_t *)__get_free_page(GFP_PGTABLE_USER);
 }
 
 static inline void pud_free(struct mm_struct *mm, pud_t *pudp)
 {
 	BUG_ON((unsigned long)pudp & (PAGE_SIZE-1));
+	//	if(free_pvtpool_pgtble)
+	//{
+	//  if(free__pvtpool_pgtble((unsigned long)pudp) == 0)
+	//    return;
+	//}
 	free_page((unsigned long)pudp);
 }
 
