@@ -10,7 +10,7 @@
  */
 
 /{
-  
+
 // 	reserved-memory {	
 // 		#address-cells = <2>;
 // 		#size-cells = <2>;
@@ -37,6 +37,8 @@
 // 		         reg = <0x0 0x60000000 0x0 0x20000000>;
 // 		};
 // };
+
+////////////////////////////////////////////////////////////
 	 // reserved-memory {
          //         #address-cells = <2>;
          //         #size-cells = <2>;
@@ -70,7 +72,8 @@
 
 //};
 
-//////////////////////////////////////////////////////////////////
+/****************************************************************************/
+//This part is going to be used for benchmarking different memory pools
 
 	 ocm@fffc0000 {
 	           device_type = "memory";
@@ -95,27 +98,64 @@
 		   compatible = "genpool";
 		   reg = <0x5 0x00000000 0x0 0x10000000>;
 	 };
+	 
+	 pvhi@85dc00000 {
+		   device_type = "memory";
+		   compatible = "genpool";
+		   reg = <0x8 0x5dc00000 0x0 0x1f400000>;
+	 };
+	 
+	pvlo@40000000 {
+		   device_type = "memory";
+		   compatible = "genpool";
+		   reg = <0x0 0x40000000 0x0 0x20000000>;
+		   // reg = <0x0 0x60000000 0x0 0x20000000>;
+	 };
 
 
 	reserved-memory {
-                 #address-cells = <2>;
-                 #size-cells = <2>;
-                 ranges;
-                 jailhouse_mem: jailhouse_mem@87d000000 {
-                          no-map;
-                          reg = <0x8 0x7d000000 0x0 0x03000000>;
-                 };
-		 private_lo1: privatelo1@fffc0000 {
+                #address-cells = <2>;
+                #size-cells = <2>;
+                ranges;
+                jailhouse_mem: jailhouse_mem@87d000000 {
+                         no-map;
+                         reg = <0x8 0x7d000000 0x0 0x03000000>;
+                };
+		/*private_lo1: privatelo1@fffc0000 {
                         reg = <0x0 0xfffc0000 0x0 0x40000>;
                 };
-		
-		private_lo2: privatelo2@10000000 {
+		*/
+		//for private pool from high memory
+		private_hi: privatehi@85dc00000 {
+		         reg = <0x8 0x5dc00000 0x0 0x1f400000>;
+		};
+		//reserving this part of DRAM for making pool
+		dram_pool: drampool@10000000 {
 			 reg = <0x0 0x10000000 0x0 0x10000000>;
 		};
 		
+		/*this reservation is for making sure that DRAM is reserved for the wholes we made in DRAM
+		for jailhouse regions -- we dont want kernel using it, why (ask Renato to complete this)*/
+		shared_lo1: sharedlo1@3fffc000 {
+ 		          reg = <0x0 0x00000000 0x0 0x4000>;
+                };
+		//for the same purpose as above
+		shared_lo2: sharedlo2@7fff8000 {
+ 		          reg = <0x0 0x00000000 0x0 0x6000>;
+                };
+		private_lo: privatelo@40000000 {
+                          reg = <0x0 0x40000000 0x0 0x20000000>;
+                };
+		
+		/*
 		private_lo3: privatelo3@a0000000 {
 			 reg = <0x0 0xa0000000 0x0 0x100000>;
-		};
+		};*/
+		//for private pool from low memory
+		/* private_lo: privatelo@60000000 {
+		         //reg = <0x0 0x60000000 0x0 0x20000000>;
+			 reg = <0x0 0x60000000 0x0 0x20000000>;
+		 };*/
         
          };
 
