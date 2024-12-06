@@ -58,9 +58,17 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
  */
 static inline pgtable_t __pte_alloc_one(struct mm_struct *mm, gfp_t gfp)
 {
-	struct page *pte;
-
-	pte = alloc_page(gfp);
+	struct page *pte = NULL;
+	//Gol
+	if (alloc_pvtpool_pgtble && mm->prof_info)
+	{
+		pte = alloc_pvtpool_pgtble(mm);
+	}
+	if (!pte)
+	{
+	  //printk("if we are here means pte from our allocation is NULL\n");
+		pte = alloc_page(gfp);
+	}
 	if (!pte)
 		return NULL;
 	if (!pgtable_pte_page_ctor(pte)) {
@@ -99,6 +107,11 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm)
 static inline void pte_free(struct mm_struct *mm, struct page *pte_page)
 {
 	pgtable_pte_page_dtor(pte_page);
+	if (free_pvtpool_pgtble)
+	{
+		if(free_pvtpool_pgtble((unsigned long)page_to_virt(pte_page)) == 0)
+			return;
+	}
 	__free_page(pte_page);
 }
 
