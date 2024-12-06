@@ -134,6 +134,14 @@ EXPORT_SYMBOL(alloc_pvtpool_page);
 int (*free_pvtpool_page) (struct page *page) = NULL;
 EXPORT_SYMBOL(free_pvtpool_page);
 
+//Gol
+//test my hook
+struct page * (*alloc_pvtpool_pgtble) (struct mm_struct *mm) = NULL;
+EXPORT_SYMBOL(alloc_pvtpool_pgtble);
+
+int (*free_pvtpool_pgtble) (unsigned long page) = NULL;
+EXPORT_SYMBOL(free_pvtpool_pgtble);
+
 atomic_long_t _totalram_pages __read_mostly;
 EXPORT_SYMBOL(_totalram_pages);
 unsigned long totalreserve_pages __read_mostly;
