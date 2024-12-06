@@ -767,7 +767,10 @@ struct pvtpool_params {
 };
 extern int (*free_pvtpool_page) (struct page *page);
 extern struct page * (*alloc_pvtpool_page) (struct page *page, unsigned long);
-
+//Gol
+//test my hook
+extern struct page * (*alloc_pvtpool_pgtble) (struct mm_struct *mm);
+extern  int (*free_pvtpool_pgtble) (unsigned long page);
 /*
  * Compound pages have a destructor function.  Provide a
  * prototype for that function and accessor functions.
